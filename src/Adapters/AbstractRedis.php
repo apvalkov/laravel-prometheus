@@ -11,8 +11,8 @@ use Prometheus\Histogram;
 use Prometheus\Math;
 use Prometheus\MetricFamilySamples;
 use Prometheus\Storage\Adapter;
-use App\Components\Prometheus\Clients\Redis;
-use App\Components\Prometheus\Clients\Exceptions\RedisClientException;
+use Apvalkov\LaravelPrometheus\Clients\Redis;
+use Apvalkov\LaravelPrometheus\Clients\Exceptions\RedisClientException;
 use Prometheus\Summary;
 use RuntimeException;
 

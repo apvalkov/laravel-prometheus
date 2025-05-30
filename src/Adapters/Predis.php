@@ -4,7 +4,7 @@ namespace Apvalkov\LaravelPrometheus\Adapters;
 
 use InvalidArgumentException;
 use Predis\Client;
-use App\Components\Prometheus\Clients\Predis as PredisClient;
+use Apvalkov\LaravelPrometheus\Clients\Predis as PredisClient;
 
 class Predis extends AbstractRedis
 {
