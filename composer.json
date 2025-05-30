@@ -1,0 +1,24 @@
+{
+    "name": "apvalkov/laravel-prometheus",
+    "description": "Laravel prometheus package",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "Apvalkov\\LaravelPrometheus\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "apvalkov"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "promphp/prometheus_client_php": "^2.14",
+        "illuminate/contracts": "9",
+        "illuminate/support": "*",
+        "predis/predis": "^1.1"
+    }
+}
