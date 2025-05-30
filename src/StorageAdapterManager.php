@@ -14,7 +14,7 @@ class StorageAdapterManager extends Manager
      */
     public function getDefaultDriver(): string
     {
-        return $this->config->get('prometheus.storage_adapter', 'in_memory');
+        return $this->config->get('prometheus.storage_driver', 'in_memory');
     }
 
     /**
