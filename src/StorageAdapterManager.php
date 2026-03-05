@@ -3,6 +3,7 @@
 namespace Apvalkov\LaravelPrometheus;
 
 use Apvalkov\LaravelPrometheus\Adapters\Predis;
+use Apvalkov\LaravelPrometheus\Adapters\RedisCluster;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Manager;
 use Prometheus\Storage\InMemory;
@@ -24,6 +25,15 @@ class StorageAdapterManager extends Manager
     public function createPredisDriver(): Predis
     {
         return $this->container->make(Predis::class);
+    }
+
+    /**
+     * @return RedisCluster
+     * @throws BindingResolutionException
+     */
+    public function createRedisClusterDriver(): RedisCluster
+    {
+        return $this->container->make(RedisCluster::class);
     }
 
     /**
