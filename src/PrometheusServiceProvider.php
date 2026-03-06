@@ -4,6 +4,7 @@ namespace Apvalkov\LaravelPrometheus;
 
 use Apvalkov\LaravelPrometheus\Adapters\Predis;
 use Apvalkov\LaravelPrometheus\Adapters\RedisCluster;
+use Apvalkov\LaravelPrometheus\Adapters\PredisCluster;
 use Illuminate\Support\ServiceProvider;
 use Prometheus\CollectorRegistry;
 use Prometheus\Storage\Adapter;
@@ -16,7 +17,7 @@ class PrometheusServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/prometheus.php',
+            __DIR__ . '/../config/prometheus.php',
             'prometheus'
         );
 
@@ -26,6 +27,10 @@ class PrometheusServiceProvider extends ServiceProvider
 
         $this->app->singleton(RedisCluster::class, function () {
             return RedisCluster::fromExistingConnection($this->app->get('redis')->client());
+        });
+
+        $this->app->singleton(PredisCluster::class, function () {
+            return PredisCluster::fromExistingConnection($this->app->get('redis')->client());
         });
 
         $this->app->singleton(Adapter::class, function ($app) {
@@ -48,7 +53,7 @@ class PrometheusServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__.'/../config/prometheus.php' => config_path('prometheus.php'),
+            __DIR__ . '/../config/prometheus.php' => config_path('prometheus.php'),
         ], 'config');
     }
 }
