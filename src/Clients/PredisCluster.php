@@ -142,19 +142,25 @@ class PredisCluster implements Redis
         // Check if we have a cluster connection that is iterable
         if ($connection instanceof \IteratorAggregate || $connection instanceof \Traversable) {
             // Predis 2.x cluster connection - iterate all nodes
-            foreach ($connection as $node) {
+            $commandFactory = $this->client->getCommandFactory();
+
+            foreach ($connection as $nodeConnection) {
                 try {
-                    $it = null;
+                    $cursor = 0;
                     do {
-                        // SCAN command returns [cursor, [keys]]
-                        $result = $node->scan($it, 'MATCH', $pattern, 'COUNT', 100);
+                        // Create SCAN command for this node
+                        $scanCommand = $commandFactory->create('SCAN', [$cursor, 'MATCH', $pattern, 'COUNT', 100]);
+
+                        // Execute command on specific node connection
+                        $result = $nodeConnection->executeCommand($scanCommand);
+
                         if (is_array($result) && isset($result[1]) && is_array($result[1])) {
                             $keys = array_merge($keys, $result[1]);
-                            $it = (int) $result[0];
+                            $cursor = (int) $result[0];
                         } else {
                             break;
                         }
-                    } while ($it !== 0);
+                    } while ($cursor !== 0);
                 } catch (\Exception $e) {
                     // Skip failed nodes
                     continue;
