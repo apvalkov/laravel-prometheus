@@ -19,6 +19,6 @@
         "promphp/prometheus_client_php": "^2.14",
         "illuminate/contracts": "^12.0",
         "illuminate/support": "*",
-        "predis/predis": "^1.1"
+        "predis/predis": "^2.1"
     }
 }

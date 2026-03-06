@@ -44,15 +44,14 @@ class Predis extends AbstractRedis
     public static function fromExistingConnection(Client $client): self
     {
         $clientOptions = $client->getOptions();
-        $options       = [
-            'aggregate'   => $clientOptions->aggregate,
-            'cluster'     => $clientOptions->cluster,
-            'connections' => $clientOptions->connections,
-            'exceptions'  => $clientOptions->exceptions,
-            'prefix'      => $clientOptions->prefix,
-            'commands'    => $clientOptions->commands,
-            'replication' => $clientOptions->replication,
-        ];
+        $options       = [];
+
+        // Extract options using magic __get() method in Predis 2.x
+        foreach (['aggregate', 'cluster', 'connections', 'exceptions', 'prefix', 'commands', 'replication'] as $optionName) {
+            if (isset($clientOptions->$optionName)) {
+                $options[$optionName] = $clientOptions->$optionName;
+            }
+        }
 
         $self        = new self();
         $self->redis = new PredisClient(self::$defaultParameters, $options, $client);

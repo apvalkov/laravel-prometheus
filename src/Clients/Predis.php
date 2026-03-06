@@ -89,7 +89,7 @@ class Predis implements Redis
      */
     public function setNx(string $key, mixed $value): void
     {
-        $this->client->setnx($key, $value) === 1;
+        $this->client->setnx($key, $value);
     }
 
     /**
@@ -101,7 +101,7 @@ class Predis implements Redis
      */
     public function hSetNx(string $key, string $field, mixed $value): bool
     {
-        return $this->hSetNx($key, $field, $value);
+        return (bool) $this->client->hsetnx($key, $field, $value);
     }
 
     /**
@@ -111,7 +111,14 @@ class Predis implements Redis
      */
     public function sMembers(string $key): array
     {
-        return $this->client->smembers($key);
+        $result = $this->client->smembers($key);
+
+        // Predis 2.x may return objects with getArrayCopy() method
+        if (is_object($result) && method_exists($result, 'getArrayCopy')) {
+            return $result->getArrayCopy();
+        }
+
+        return is_array($result) ? $result : [];
     }
 
     /**
@@ -121,7 +128,18 @@ class Predis implements Redis
      */
     public function hGetAll(string $key): array|false
     {
-        return $this->client->hgetall($key);
+        $result = $this->client->hgetall($key);
+
+        if ($result === null || $result === false) {
+            return false;
+        }
+
+        // Predis 2.x may return objects with getArrayCopy() method
+        if (is_object($result) && method_exists($result, 'getArrayCopy')) {
+            return $result->getArrayCopy();
+        }
+
+        return is_array($result) ? $result : false;
     }
 
     /**
@@ -131,7 +149,14 @@ class Predis implements Redis
      */
     public function keys(string $pattern): array
     {
-        return $this->client->keys($pattern);
+        $result = $this->client->keys($pattern);
+
+        // Predis 2.x may return objects with getArrayCopy() method
+        if (is_object($result) && method_exists($result, 'getArrayCopy')) {
+            return $result->getArrayCopy();
+        }
+
+        return is_array($result) ? $result : [];
     }
 
     /**

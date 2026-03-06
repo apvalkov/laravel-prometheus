@@ -34,15 +34,14 @@ class PredisCluster implements Redis
     public static function fromExistingConnection(Client $client): self
     {
         $clientOptions = $client->getOptions();
-        $options = [
-            'aggregate'   => $clientOptions->aggregate,
-            'cluster'     => $clientOptions->cluster,
-            'connections' => $clientOptions->connections,
-            'exceptions'  => $clientOptions->exceptions,
-            'prefix'      => $clientOptions->prefix,
-            'commands'    => $clientOptions->commands,
-            'replication' => $clientOptions->replication,
-        ];
+        $options = [];
+
+        // Extract options using magic __get() method in Predis 2.x
+        foreach (['aggregate', 'cluster', 'connections', 'exceptions', 'prefix', 'commands', 'replication'] as $optionName) {
+            if (isset($clientOptions->$optionName)) {
+                $options[$optionName] = $clientOptions->$optionName;
+            }
+        }
 
         $instance = new self([], $options);
         $instance->client = $client;
@@ -138,30 +137,36 @@ class PredisCluster implements Redis
     public function keys(string $pattern): array
     {
         $keys = [];
-
-        // Get all cluster nodes
         $connection = $this->client->getConnection();
 
-        if (method_exists($connection, 'executeCommand')) {
-            // Predis cluster connection
+        // Check if we have a cluster connection that is iterable
+        if ($connection instanceof \IteratorAggregate || $connection instanceof \Traversable) {
+            // Predis 2.x cluster connection - iterate all nodes
             foreach ($connection as $node) {
-                $it = 0;
-                do {
-                    $result = $node->scan($it, 'MATCH', $pattern, 'COUNT', 100);
-                    if (isset($result[1]) && is_array($result[1])) {
-                        $keys = array_merge($keys, $result[1]);
-                        $it = (int) $result[0];
-                    } else {
-                        break;
-                    }
-                } while ($it != 0);
+                try {
+                    $it = null;
+                    do {
+                        // SCAN command returns [cursor, [keys]]
+                        $result = $node->scan($it, 'MATCH', $pattern, 'COUNT', 100);
+                        if (is_array($result) && isset($result[1]) && is_array($result[1])) {
+                            $keys = array_merge($keys, $result[1]);
+                            $it = (int) $result[0];
+                        } else {
+                            break;
+                        }
+                    } while ($it !== 0);
+                } catch (\Exception $e) {
+                    // Skip failed nodes
+                    continue;
+                }
             }
         } else {
-            // Fallback to KEYS command (less efficient but works)
-            $keys = $this->client->keys($pattern);
+            // Fallback to KEYS command (less efficient but works for single node or non-cluster)
+            $result = $this->client->keys($pattern);
+            $keys = is_array($result) ? $result : [];
         }
 
-        return $keys;
+        return array_unique($keys);
     }
 
     /**
