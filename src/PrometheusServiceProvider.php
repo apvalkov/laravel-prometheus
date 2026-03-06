@@ -3,6 +3,7 @@
 namespace Apvalkov\LaravelPrometheus;
 
 use Apvalkov\LaravelPrometheus\Adapters\Predis;
+use Apvalkov\LaravelPrometheus\Adapters\RedisCluster;
 use Illuminate\Support\ServiceProvider;
 use Prometheus\CollectorRegistry;
 use Prometheus\Storage\Adapter;
@@ -21,6 +22,10 @@ class PrometheusServiceProvider extends ServiceProvider
 
         $this->app->singleton(Predis::class, function () {
             return Predis::fromExistingConnection($this->app->get('redis')->client());
+        });
+
+        $this->app->singleton(RedisCluster::class, function () {
+            return RedisCluster::fromExistingConnection($this->app->get('redis')->client());
         });
 
         $this->app->singleton(Adapter::class, function ($app) {

@@ -24,6 +24,15 @@ abstract class AbstractRedis implements Adapter
     protected Redis $redis;
 
     /**
+     * Returns the key prefix used for all Redis keys.
+     * Override in subclasses to apply hash tags for cluster compatibility.
+     */
+    protected function getKeyPrefix(): string
+    {
+        return self::$prefix;
+    }
+
+    /**
      * @param string $prefix
      *
      * @return void
@@ -57,7 +66,7 @@ abstract class AbstractRedis implements Adapter
             $searchPattern .= $globalPrefix;
         }
 
-        $searchPattern .= self::$prefix;
+        $searchPattern .= $this->getKeyPrefix();
         $searchPattern .= '*';
 
         $this->redis->eval(
@@ -130,7 +139,7 @@ LUA
             ,
             [
                 $this->toMetricKey($data),
-                self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                $this->getKeyPrefix() . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 json_encode(['b' => 'sum', 'labelValues' => $data['labelValues']]),
                 json_encode(['b' => $bucketToIncrease, 'labelValues' => $data['labelValues']]),
                 $data['value'],
@@ -150,7 +159,7 @@ LUA
         $this->redis->ensureOpenConnection();
 
         // store meta
-        $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
+        $summaryKey = $this->getKeyPrefix() . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
         $metaKey    = $summaryKey . ':' . $this->metaKey($data);
         $json       = json_encode($this->metaData($data));
         if ($json === false) {
@@ -202,7 +211,7 @@ LUA
             ,
             [
                 $this->toMetricKey($data),
-                self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                $this->getKeyPrefix() . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $this->getRedisCommand($data['command']),
                 json_encode($data['labelValues']),
                 $data['value'],
@@ -234,7 +243,7 @@ LUA
             ,
             [
                 $this->toMetricKey($data),
-                self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
+                $this->getKeyPrefix() . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX,
                 $this->getRedisCommand($data['command']),
                 $data['value'],
                 json_encode($data['labelValues']),
@@ -284,7 +293,7 @@ LUA
      */
     protected function collectHistograms(): array
     {
-        $keys = $this->redis->sMembers(self::$prefix . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $keys = $this->redis->sMembers($this->getKeyPrefix() . Histogram::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
         $histograms = [];
         foreach ($keys as $key) {
@@ -378,7 +387,7 @@ LUA
     protected function collectSummaries(): array
     {
         $math       = new Math();
-        $summaryKey = self::$prefix . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
+        $summaryKey = $this->getKeyPrefix() . Summary::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX;
         $keys       = $this->redis->keys($summaryKey . ':*:meta');
 
         $summaries = [];
@@ -475,7 +484,7 @@ LUA
      */
     protected function collectGauges(bool $sortMetrics = true): array
     {
-        $keys = $this->redis->sMembers(self::$prefix . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $keys = $this->redis->sMembers($this->getKeyPrefix() . Gauge::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
         $gauges = [];
         foreach ($keys as $key) {
@@ -517,7 +526,7 @@ LUA
      */
     protected function collectCounters(bool $sortMetrics = true): array
     {
-        $keys = $this->redis->sMembers(self::$prefix . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
+        $keys = $this->redis->sMembers($this->getKeyPrefix() . Counter::TYPE . self::PROMETHEUS_METRIC_KEYS_SUFFIX);
         sort($keys);
         $counters = [];
         foreach ($keys as $key) {
@@ -573,7 +582,7 @@ LUA
      */
     protected function toMetricKey(array $data): string
     {
-        return implode(':', [self::$prefix, $data['type'], $data['name']]);
+        return implode(':', [$this->getKeyPrefix(), $data['type'], $data['name']]);
     }
 
     /**
